@@ -34,7 +34,7 @@ def main(train_x_path: str, train_y_path: str, test_x_path: str, num_of_rows: in
     model = ModelA(training_set.shape(1))
     model_wrapper = ModelWrapper(model, 20)
     batch_size = 500
-    total_loss = model_wrapper.train(training_set, batch_size=batch_size)
+    total_loss = model_wrapper.train_model(training_set, batch_size=batch_size)
     print(f'Total Loss: {total_loss}')
     accuracy = model_wrapper.test(validation_set, batch_size=batch_size)
     print(f'Accuracy: {accuracy}')

@@ -3,7 +3,6 @@ from typing import Callable
 import torch
 from torch.utils.data import DataLoader
 from torch import Tensor
-from torch.optim import Optimizer
 import torch.nn as nn
 
 from fashion_dataset import FashionDataset
@@ -16,10 +15,10 @@ class ModelWrapper:
         self.optimizer = model.optimizer
         self.loss_function = model.loss_function
 
-    def train(self, training_data, batch_size: int = 10) -> float:
-        train_loader = DataLoader(training_data, batch_size=batch_size, shuffle=True, num_workers=2)
+    def train(self, training_data, batch_size: int) -> float:
+        train_loader = DataLoader(training_data, batch_size=batch_size, shuffle=True, num_workers=4)
         self.model.train()
-        total_loss = 0.0
+        running_loss = 0.0
         for i in range(self.epochs):
             running_loss = 0.0
             for batch_idx, (inputs, labels) in enumerate(train_loader):
@@ -30,11 +29,18 @@ class ModelWrapper:
                 self.optimizer.step()
                 running_loss += loss.item()
             print(f'Epoch: {i + 1} loss: {running_loss}')
-            total_loss += running_loss
-        return total_loss
+        return running_loss
+
+    def train_model(self, training_data, batch_size: int = 10):
+        last_loss = self.train(training_data, batch_size)
+        for i in range(1):
+            if last_loss <= 5:
+                break
+            last_loss = self.train(training_data,batch_size)
+        return last_loss
 
     def test(self, data, batch_size: int = 10) -> float:
-        test_loader = DataLoader(data, batch_size=batch_size, shuffle=False, num_workers=2)
+        test_loader = DataLoader(data, batch_size=batch_size, shuffle=False, num_workers=4)
         total = 0
         correct = 0
         self.model.eval()
