@@ -3,7 +3,6 @@ from typing import List, Tuple
 
 import torch
 from numpy import ndarray
-from torch.utils.data.dataset import T_co
 from torchvision.transforms import Compose
 from torch import Tensor
 from torch.utils.data import Dataset
@@ -112,12 +111,12 @@ class FashionDataset(Dataset):
 
 
 class StdNormalizer:
-    def __init__(self, data_set: Tensor) -> None:
+    def __init__(self, data_set: ndarray) -> None:
         self.mean = data_set.mean(axis=0)
         self.std_dev = data_set.std(axis=0)
 
     def __call__(self, data: Tensor) -> Tensor:
-        return ((data - self.mean) / self.std_dev)
+        return (data - self.mean) / self.std_dev
 
 
 class MinMaxNormalizer:
@@ -127,9 +126,7 @@ class MinMaxNormalizer:
         self.normalized_min = normalized_min
         self.normalized_max = normalized_max
 
-    def __call__(self, data: Tensor):
+    def __call__(self, data: ndarray):
         factor = (self.normalized_max - self.normalized_min)
         x = ((data - self.min) / (self.max - self.min)) * factor + self.normalized_min
         return x
-
-

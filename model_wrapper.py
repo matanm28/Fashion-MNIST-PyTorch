@@ -1,7 +1,8 @@
-from typing import  Tuple
+from typing import Tuple
 
 import numpy as np
 import torch
+from numpy import ndarray
 from torch.utils.data import DataLoader
 from torch import Tensor
 import torch.nn as nn
@@ -10,15 +11,16 @@ from fashion_dataset import FashionDataset
 
 
 class ModelWrapper:
-    def __init__(self, model: nn.Module, epochs: int):
+    def __init__(self, model: nn.Module, epochs: int, batch_size: int):
         self.model = model
         datasets.FashionMNIST('./data', )
         self.epochs = epochs
         self.optimizer = model.optimizer
         self.loss_function = model.loss_function
+        self.batch_size = batch_size
 
-    def train(self, training_data, batch_size: int) -> float:
-        train_loader = DataLoader(training_data, batch_size=batch_size, shuffle=True, num_workers=2)
+    def train_model(self, training_data) -> Tuple[ndarray, ndarray]:
+        train_loader = DataLoader(training_data, batch_size=self.batch_size, shuffle=True, num_workers=2)
         self.model.train()
         loss_list = []
         accuracy_list = []
@@ -41,16 +43,16 @@ class ModelWrapper:
             print(f'Epoch: {i + 1} loss: {loss_list[-1]} accuracy: {accuracy_list[-1]}')
         return np.array(loss_list), np.array(accuracy_list)
 
-    def train_model(self, training_data, batch_size: int = 10):
-        last_loss = self.train(training_data, batch_size)
-        # for i in range(1):
-        #     if last_loss <= 5:
+    def train(self, training_data):
+        loss, accuracy = self.train_model(training_data)
+        # for i in range(3):
+        #     if accuracy[-1] >= 88:
         #         break
-        #     last_loss = self.train(training_data,batch_size)
-        return last_loss
+        #     loss, accuracy = self.train_model(training_data)
+        return loss, accuracy
 
-    def test(self, data, batch_size: int = 10) -> Tuple[float,float]:
-        test_loader = DataLoader(data, batch_size=batch_size, shuffle=False, num_workers=2)
+    def test(self, data) -> Tuple[float, float]:
+        test_loader = DataLoader(data, batch_size=self.batch_size, shuffle=False, num_workers=2)
         total = 0
         correct = 0
         loss = 0

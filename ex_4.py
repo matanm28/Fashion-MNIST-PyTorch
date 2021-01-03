@@ -1,13 +1,19 @@
 import math
 import sys
+
+import torch
 from numpy import ndarray
 from torchvision import transforms, datasets
 import numpy as np
 
-from fashion_dataset import StdNormalizer, FashionDataset, FashionTestDataset
+from fashion_dataset import StdNormalizer, FashionDataset
 from model_a import ModelA
 from model_wrapper import ModelWrapper
 from torch.utils.data import random_split
+
+MODELS = {
+    'A': ModelA
+}
 
 
 def normalize_data_std(data_set: ndarray):
@@ -22,52 +28,40 @@ def normalize_data_min_max(data_set: ndarray, new_min: int = 0, new_max: int = 1
     return ((data_set - data_min) / (data_max - data_min)) * (new_max - new_min) + new_min
 
 
-def main(train_x_path: str, train_y_path: str, test_x_path: str, num_of_rows: int = None):
-    transformers = transforms.Compose([transforms.ToTensor()])
-    training_set, validation_set = FashionDataset.from_files(train_x_path, train_y_path, num_of_rows,
-                                                             0.2)
-    test_set, _ = FashionDataset.from_files(test_x_path)
+def run_model(train_x_path: str, train_y_path: str, test_x_path: str, model_name: str, epochs: int, lr: float,
+              batch_size: int, num_of_rows: int = None):
+    training_set, validation_set = FashionDataset.from_files(train_x_path, train_y_path, num_of_rows, 0.2)
     train_transform_func = transforms.Compose([StdNormalizer(training_set.data)])
     training_set.set_transforms(train_transform_func)
     validation_set_transforms = transforms.Compose([StdNormalizer(validation_set.data)])
     validation_set.set_transforms(validation_set_transforms)
+    online_validation = datasets.FashionMNIST('.\data', train=False, download=True)
+    flat_data_tensor = online_validation.data.reshape((online_validation.data.shape[0], 784)).type(torch.float32)
+    online_validation_set_transforms = transforms.Compose([StdNormalizer(flat_data_tensor)])
+    online_validation_set = FashionDataset(flat_data_tensor.numpy(), online_validation.targets.numpy())
+    online_validation_set.set_transforms(online_validation_set_transforms)
+
+    test_set, _ = FashionDataset.from_files(test_x_path)
     test_transform_func = transforms.Compose([StdNormalizer(test_set.data)])
     test_set.set_transforms(test_transform_func)
 
-    model = ModelA(784, 0.1)
-    model_wrapper = ModelWrapper(model, 15)
-    batch_size = 500
-    h = transforms.Compose([StdNormalizer(test_set.data)])
-    #test_set, _ = FashionDataset.from_files(test_x_path)
-    #test_set.set_transforms(h)
-    # t = transforms.Compose([transforms.ToTensor(), StdNormalizer(test_set.data_x)])
-    # training = datasets.FashionMNIST('.\data', train=True, download=True, transform=t)
-    # training_set, validation_set = random_split(training,
-    #                                             [int(training.data.shape[0] * 0.8), int(training.data.shape[0] * 0.2)])
-    total_loss = model_wrapper.train_model(training_set, batch_size=batch_size)
-    print(f'Total Loss: {total_loss}')
-    accuracy = model_wrapper.test(validation_set, batch_size=batch_size)
+    model = MODELS[model_name](training_set.data.shape[1], lr)
+    model_wrapper = ModelWrapper(model, epochs, batch_size)
+
+    loss_arr, accuracy_arr = model_wrapper.train(training_set)
+    print(f'Total Loss: {loss_arr[-1]}')
+    loss, accuracy = model_wrapper.test(validation_set)
     print(f'Accuracy: {accuracy}')
     predict = model_wrapper.predict(test_set)
     with open('test_y', 'w') as file:
         for pred in predict.numpy():
             file.write(f'{pred}\n')
-    return predict
+    return
 
 
-def check_files_equal():
-    import os
-    file_1 = 'test_y'
-    file_2 = os.path.join(os.pardir, 'Fashion-MNIST', 'test_y')
-    with open(file_1, 'r') as y1:
-        with open(file_2, 'r') as y2:
-            diff_rows = []
-            for i, (row_1, row_2) in enumerate(zip(y1.readlines(), y2.readlines())):
-                if row_1 != row_2:
-                    s = ' \n'
-                    print(f'row #{i + 1} {row_1.strip(s)}!={row_2.strip(s)}')
-                    diff_rows.append(i)
-            return diff_rows
+def main(train_x_path: str, train_y_path: str, test_x_path: str, num_of_rows: int = None):
+    models_list = []
+    run_model(train_x_path, train_y_path, test_x_path, 'A', 15, 0.1, 500, num_of_rows)
 
 
 if __name__ == '__main__':
@@ -85,5 +79,6 @@ if __name__ == '__main__':
     }
     # diff_rows_list = check_files_equal()
     # print(diff_rows_list)
+    NUM_OF_ROWS = None
     if len(sys.argv) == 4:
-        main(sys.argv[1], sys.argv[2], sys.argv[3])
+        main(sys.argv[1], sys.argv[2], sys.argv[3], NUM_OF_ROWS)

@@ -4,7 +4,7 @@ from torch import Tensor, optim
 
 
 class ModelA(nn.Module):
-    def __init__(self, image_size: int, lr: float = 0.1):
+    def __init__(self, image_size: int, lr: float = 0.1, batch_size: int = 500):
         super(ModelA, self).__init__()
         self.image_size = image_size
         self.hidden_layer_0 = nn.Linear(image_size, 100)
