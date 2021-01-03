@@ -1,60 +1,74 @@
-from typing import Callable
+from typing import  Tuple
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from torch import Tensor
 import torch.nn as nn
-
+from torchvision import datasets
 from fashion_dataset import FashionDataset
 
 
 class ModelWrapper:
     def __init__(self, model: nn.Module, epochs: int):
         self.model = model
+        datasets.FashionMNIST('./data', )
         self.epochs = epochs
         self.optimizer = model.optimizer
         self.loss_function = model.loss_function
 
     def train(self, training_data, batch_size: int) -> float:
-        train_loader = DataLoader(training_data, batch_size=batch_size, shuffle=True, num_workers=4)
+        train_loader = DataLoader(training_data, batch_size=batch_size, shuffle=True, num_workers=2)
         self.model.train()
-        running_loss = 0.0
+        loss_list = []
+        accuracy_list = []
         for i in range(self.epochs):
             running_loss = 0.0
+            total = 0
+            correct = 0
             for batch_idx, (inputs, labels) in enumerate(train_loader):
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
-                loss = self.loss_function(outputs, labels)
+                loss = self.loss_function(outputs, labels.type(torch.long))
                 loss.backward()
                 self.optimizer.step()
                 running_loss += loss.item()
-            print(f'Epoch: {i + 1} loss: {running_loss}')
-        return running_loss
+                predictions = torch.argmax(outputs.data, 1)
+                total += labels.size(0)
+                correct += (predictions == labels).sum().item()
+            accuracy_list.append(100 * correct / total)
+            loss_list.append(running_loss / total)
+            print(f'Epoch: {i + 1} loss: {loss_list[-1]} accuracy: {accuracy_list[-1]}')
+        return np.array(loss_list), np.array(accuracy_list)
 
     def train_model(self, training_data, batch_size: int = 10):
         last_loss = self.train(training_data, batch_size)
-        for i in range(1):
-            if last_loss <= 5:
-                break
-            last_loss = self.train(training_data,batch_size)
+        # for i in range(1):
+        #     if last_loss <= 5:
+        #         break
+        #     last_loss = self.train(training_data,batch_size)
         return last_loss
 
-    def test(self, data, batch_size: int = 10) -> float:
-        test_loader = DataLoader(data, batch_size=batch_size, shuffle=False, num_workers=4)
+    def test(self, data, batch_size: int = 10) -> Tuple[float,float]:
+        test_loader = DataLoader(data, batch_size=batch_size, shuffle=False, num_workers=2)
         total = 0
         correct = 0
+        loss = 0
         self.model.eval()
         with torch.no_grad():
             for inputs, labels in test_loader:
                 outputs = self.model(inputs)
+                loss += self.loss_function(outputs, labels.type(torch.long)).sum().item()
                 predictions = torch.argmax(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predictions == labels).sum().item()
-        return 100 * correct / total
+        return loss / total, 100 * correct / total
 
     def predict(self, data: FashionDataset) -> Tensor:
+        pred_loader = DataLoader(data, batch_size=data.shape(0), shuffle=False, num_workers=2)
         self.model.eval()
         with torch.no_grad():
-            outputs = self.model(data.data_x)
-            predictions = torch.argmax(outputs.data, 1)
-            return predictions
+            for inputs, _ in pred_loader:
+                outputs = self.model(inputs)
+                predictions = torch.argmax(outputs.data, 1)
+                return predictions

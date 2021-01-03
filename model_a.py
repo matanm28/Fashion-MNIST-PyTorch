@@ -24,4 +24,5 @@ class ModelA(nn.Module):
         data = data.view(-1, self.image_size)
         data = F.relu(self.hidden_layer_0(data))
         data = F.relu(self.hidden_layer_1(data))
+        data = F.relu(self.output_layer(data))
         return F.log_softmax(data, dim=1)

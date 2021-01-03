@@ -2,10 +2,24 @@ import random
 from typing import List, Tuple
 
 import torch
+from numpy import ndarray
+from torch.utils.data.dataset import T_co
 from torchvision.transforms import Compose
 from torch import Tensor
 from torch.utils.data import Dataset
 import numpy as np
+
+
+def normalize_data_std(data_set: ndarray):
+    mean = data_set.mean(axis=0)
+    std_dev = data_set.std(axis=0)
+    return np.nan_to_num((data_set - mean) / std_dev)
+
+
+def normalize_data_min_max(data_set: ndarray, new_min: int = 0, new_max: int = 1):
+    data_min = data_set.min(axis=0)
+    data_max = data_set.max(axis=0)
+    return ((data_set - data_min) / (data_max - data_min)) * (new_max - new_min) + new_min
 
 
 def get_data_from_file(file_path: str, num_of_rows: int = None):
@@ -23,22 +37,22 @@ def get_data_set_from_file(training_set_examples_path: str):
         for line in lines:
             data = line.split()
             examples_list.append(data)
-    return np.array(examples_list, dtype=np.float)
+    return np.array(examples_list, dtype=np.float32)
 
 
 def get_data_answers_from_file(file_path: str, num_of_rows: int = None):
     if num_of_rows is not None:
-        answers = np.loadtxt(file_path, max_rows=num_of_rows, dtype=np.int16)
+        answers = np.loadtxt(file_path, max_rows=num_of_rows, dtype=np.int32)
     else:
-        answers = np.loadtxt(file_path, dtype=np.int16)
+        answers = np.loadtxt(file_path, dtype=np.int32)
     return answers
 
 
 class FashionDataset(Dataset):
     def __init__(self, data: np.ndarray, labels: np.ndarray) -> None:
         super(Dataset, self).__init__()
-        self.data = torch.tensor(data, dtype=torch.float32)
-        self.labels = torch.tensor(labels, dtype=torch.long)
+        self._data = torch.tensor(data)
+        self._labels = torch.tensor(labels)
         self.transforms = None
 
     @classmethod
@@ -48,7 +62,7 @@ class FashionDataset(Dataset):
         if train_y_path is not None:
             y_tmp = get_data_answers_from_file(train_y_path, num_of_rows)
         else:
-            y_tmp = np.zeros((x_tmp.shape[0]))
+            y_tmp = np.zeros((x_tmp.shape[0]), dtype=np.int32)
         if validation_size is None:
             return FashionDataset(x_tmp, y_tmp), None
         else:
@@ -74,23 +88,27 @@ class FashionDataset(Dataset):
         self.transforms = transforms
 
     def __len__(self):
-        return self.data.shape[0]
+        return self._data.shape[0]
 
     def __getitem__(self, idx: List[int]) -> Tuple[Tensor, Tensor]:
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        data = self.data[idx]
-        labels = self.labels[idx]
+        data = self._data[idx]
+        labels = self._labels[idx]
         if self.transforms is not None:
-            data, labels = self.transforms((data, labels))
+            data = self.transforms(data)
         return data, labels
 
     @property
-    def data_x(self) -> Tensor:
-        return self.data
+    def data(self) -> Tensor:
+        return self._data
+
+    @property
+    def labels(self) -> Tensor:
+        return self._labels
 
     def shape(self, i: int):
-        return self.data_x.shape[i]
+        return self.data.shape[i]
 
 
 class StdNormalizer:
@@ -99,10 +117,7 @@ class StdNormalizer:
         self.std_dev = data_set.std(axis=0)
 
     def __call__(self, data: Tensor) -> Tensor:
-        inputs, labels = data
-        x = ((inputs - self.mean) / self.std_dev)
-        x[torch.isnan(x)] = 0
-        return x, labels
+        return ((data - self.mean) / self.std_dev)
 
 
 class MinMaxNormalizer:
@@ -113,8 +128,8 @@ class MinMaxNormalizer:
         self.normalized_max = normalized_max
 
     def __call__(self, data: Tensor):
-        inputs, labels = data
         factor = (self.normalized_max - self.normalized_min)
-        x = ((inputs - self.min) / (self.max - self.min)) * factor + self.normalized_min
-        x[torch.isnan(x)] = 0
-        return x, labels
+        x = ((data - self.min) / (self.max - self.min)) * factor + self.normalized_min
+        return x
+
+
