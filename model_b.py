@@ -1,20 +1,20 @@
-import torch.nn as nn
+from torch import optim, nn
+from torch import Tensor
 import torch.nn.functional as F
-from torch import Tensor, optim
 
 from model_base import ModelBase
 
 
-class ModelA(ModelBase):
+class ModelB(ModelBase):
     def __init__(self, image_size: int, lr: float):
-        super(ModelA, self).__init__(image_size, lr)
+        super(ModelB, self).__init__(image_size, lr)
         self.hidden_layer_0 = nn.Linear(image_size, 100)
         self.hidden_layer_1 = nn.Linear(100, 50)
         self.output_layer = nn.Linear(50, 10)
 
     @property
-    def optimizer(self):
-        return optim.SGD(self.parameters(), lr=self.lr)
+    def optimizer(self) -> optim.Optimizer:
+        return optim.Adam(self.parameters(), lr=self.lr)
 
     def forward(self, data: Tensor):
         data = data.view(-1, self.image_size)

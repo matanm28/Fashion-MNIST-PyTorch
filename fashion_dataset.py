@@ -116,7 +116,9 @@ class StdNormalizer:
         self.std_dev = data_set.std(axis=0)
 
     def __call__(self, data: Tensor) -> Tensor:
-        return (data - self.mean) / self.std_dev
+        x = (data - self.mean) / self.std_dev
+        x[torch.isnan(x)] = 0
+        return x
 
 
 class MinMaxNormalizer:
