@@ -142,8 +142,6 @@ if __name__ == '__main__':
         8: 'Bag',
         9: 'Ankle boot'
     }
-    # diff_rows_list = check_files_equal()
-    # print(diff_rows_list)
     NUM_OF_ROWS = None
     if len(sys.argv) == 4:
         main(sys.argv[1], sys.argv[2], sys.argv[3], NUM_OF_ROWS)
