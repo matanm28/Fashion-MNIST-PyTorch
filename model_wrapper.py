@@ -11,13 +11,14 @@ from fashion_dataset import FashionDataset
 
 
 class ModelWrapper:
-    def __init__(self, model: nn.Module, epochs: int, batch_size: int):
+    def __init__(self, model: nn.Module, epochs: int, batch_size: int, model_name:str):
         self.model = model
         datasets.FashionMNIST('./data', )
         self.epochs = epochs
         self.optimizer = model.optimizer
         self.loss_function = model.loss_function
         self.batch_size = batch_size
+        self.model_name = model_name
 
     def train_model(self, training_data, batch_size: int = None) -> Tuple[List[float], List[float]]:
         if batch_size is None:
