@@ -32,10 +32,10 @@ MODELS = {
 HYPER_PARAMS = {
     'A': {'lr': 0.01, 'batch_size': 64, 'epochs': 12},
     'B': {'lr': 0.01, 'batch_size': 80, 'epochs': 12},
-    'C': {'lr':0.001, 'batch_size': 64, 'epochs': 12},
+    'C': {'lr': 0.001, 'batch_size': 64, 'epochs': 12},
     'D': {'lr': 0.01, 'batch_size': 64, 'epochs': 12},
     'E': {'lr': 0.01, 'batch_size': 64, 'epochs': 12},
-    'F': {'lr': 0.01,'batch_size': 250, 'epochs': 12},
+    'F': {'lr': 0.01, 'batch_size': 250, 'epochs': 12},
 }
 
 MODELS_ADDITIONAL_PARAMS = {
@@ -108,10 +108,10 @@ def get_best_model_with_threads(train_x_path: str, train_y_path: str, num_of_row
     for name in models:
         if name == best_model_name:
             continue
-        curr_avg = (models[name]['validation'][1] + models[name]['test'][1])/2
+        curr_avg = (models[name]['validation'][1] + models[name]['test'][1]) / 2
         if curr_avg > best_avg:
             best_model_name = name
-            best_avg = (models[best_model_name]['validation'][1] + models[best_model_name]['test'][1]) / 2
+            best_avg = curr_avg
     return models, best_model_name
 
 
@@ -194,7 +194,9 @@ if __name__ == '__main__':
     }
     NUM_OF_ROWS = None
     BEST_MODEL = 'D'
-    if len(sys.argv) == 4:
+    if len(sys.argv) < 4:
+        predict_with_best_model('train_x.txt', 'train_y.txt', 'test_x.txt', BEST_MODEL)
+    elif len(sys.argv) == 4:
         predict_with_best_model(sys.argv[1], sys.argv[2], sys.argv[3], BEST_MODEL)
     elif len(sys.argv) == 5:
         generate_report(sys.argv[1], sys.argv[2], sys.argv[3])

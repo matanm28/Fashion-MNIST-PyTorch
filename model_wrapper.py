@@ -44,7 +44,7 @@ class ModelWrapper:
                 correct += (predictions == labels).sum().item()
             accuracy_list.append(100 * correct / total)
             loss_list.append(running_loss / total)
-            print(f'Epoch: {i + 1} loss: {loss_list[-1]} accuracy: {accuracy_list[-1]}')
+            print(f'Epoch: {i + 1} loss: {loss_list[-1]} accuracy: {accuracy_list[-1]}%')
         return loss_list, accuracy_list
 
     def train(self, training_data) -> Tuple[ndarray, ndarray]:
