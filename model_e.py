@@ -5,12 +5,15 @@ from torch import Tensor, optim
 from model_base import ModelBase
 
 
-class ModelA(ModelBase):
+class ModelE(ModelBase):
     def __init__(self, image_size: int, lr: float):
-        super(ModelA, self).__init__(image_size, lr)
-        self.hidden_layer_0 = nn.Linear(image_size, 100)
-        self.hidden_layer_1 = nn.Linear(100, 50)
-        self.output_layer = nn.Linear(50, 10)
+        super(ModelE, self).__init__(image_size, lr)
+        self.hidden_layer_0 = nn.Linear(image_size, 128)
+        self.hidden_layer_1 = nn.Linear(128, 64)
+        self.hidden_layer_2 = nn.Linear(64, 10)
+        self.hidden_layer_3 = nn.Linear(10, 10)
+        self.hidden_layer_4 = nn.Linear(10, 10)
+        self.output_layer = nn.Linear(10, 10)
 
     @property
     def optimizer(self):
@@ -20,5 +23,8 @@ class ModelA(ModelBase):
         data = data.view(-1, self.image_size)
         data = F.relu(self.hidden_layer_0(data))
         data = F.relu(self.hidden_layer_1(data))
+        data = F.relu(self.hidden_layer_2(data))
+        data = F.relu(self.hidden_layer_3(data))
+        data = F.relu(self.hidden_layer_4(data))
         data = F.relu(self.output_layer(data))
         return F.log_softmax(data, dim=1)
